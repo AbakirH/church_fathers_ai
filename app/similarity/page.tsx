@@ -78,11 +78,11 @@ const getChurchFatherTexts = async (church_father_name: string) => {
     const querySnapshot = await getDocs(collection(db, 'church-fathers', church_father_name, "texts"));
     church_father_texts = [];
     querySnapshot.docs.forEach((doc) => {
-        const docId = doc.id;
         const data = doc.data();
-        church_father_texts.push(data);
+        if (data.verses) {
+            church_father_texts.push(data);
+        }
     });
-    console.log(church_father_texts);
     rerenderText();
     return "churchFatherTexts";
 };
