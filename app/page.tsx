@@ -1,13 +1,11 @@
-import Header from "./components/Header";
-import FathersSimilarity from "./components/FathersSimilarity";
+import Navbar from "./components/Navbar";
 
 export default function Home() {
 
   return (
     <>
-      <Header></Header>
+      <Navbar></Navbar>
       <p>Hello My name is cool</p>
-      <FathersSimilarity></FathersSimilarity>
     </>
   );
 }
