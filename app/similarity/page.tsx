@@ -54,7 +54,7 @@ const FathersSimilarity = async () => {
                     </button>
                     <div id="TextComparison" className='flex flex-col p-3 justify-center items-center'>
                         <div id="church_father_text"></div>
-                        <div id="bible_verse_results" className='p-3 flex flex-row'></div>
+                        <div id="bible_verse_results" className='p-3 flex flex-row flex-wrap'></div>
                     </div>
                     <button onClick={() => {
                         currentIndex >= church_father_texts.length - 1 ? currentIndex = 0 : currentIndex += 1;
@@ -146,7 +146,7 @@ const rerenderText = () => {
         church_father_texts[currentIndex].verses.forEach((verse: any) => {
             console.log(verse);
             const bible_verse_result = document.createElement('div');
-            bible_verse_result.classList.add('bg-gray-100', 'p-4', 'm-5', 'rounded', 'shadow-md', 'flex', 'flex-col');
+            bible_verse_result.classList.add('bg-gray-100', 'p-4', 'm-5', 'rounded', 'shadow-md', 'flex', 'flex-col', 'w-60');
 
             const verseElement = document.createElement('h3');
             verseElement.classList.add('text-2xl', 'font-bold');
