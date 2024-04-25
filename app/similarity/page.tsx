@@ -77,6 +77,7 @@ const getChurchFathers = async () => {
 const getChurchFatherTexts = async (church_father_name: string) => {
     const querySnapshot = await getDocs(collection(db, 'church-fathers', church_father_name, "texts"));
     church_father_texts = [];
+    currentIndex = 0;
     querySnapshot.docs.forEach((doc) => {
         const data = doc.data();
         if (data.verses) {
@@ -89,8 +90,11 @@ const getChurchFatherTexts = async (church_father_name: string) => {
 
 const rerenderText = () => {
 
+    if (church_father_texts.length === 0) {
+        alert('No texts found for this church father')
+        return;
+    }
     const churchFatherText = document.getElementById('church_father_text');
-    console.log(currentIndex);
     if (churchFatherText && churchFatherText.innerHTML !== '') {
         churchFatherText.innerHTML = '';
     }
@@ -104,9 +108,31 @@ const rerenderText = () => {
         const textWrapper = document.createElement('p');
 
         // Set the text content inside the wrapper div
-        textWrapper.textContent = church_father_texts[currentIndex].text;
+        const maxCharacters = 500;
+        let fullText = church_father_texts[currentIndex].text;
+        let shortText = fullText.substring(0, maxCharacters);
+        let isExpanded = false;
+
+        textWrapper.textContent = shortText + (fullText.length > maxCharacters ? '...' : ''); // Append ellipsis if text is truncated
         panel.classList.add('bg-gray-100', 'p-4', 'rounded', 'shadow-md');
         panel.appendChild(textWrapper);
+
+        if (fullText.length > maxCharacters) {
+            const moreButton = document.createElement('button');
+            moreButton.textContent = 'More';
+            moreButton.classList.add('font-bold');
+            moreButton.addEventListener('click', () => {
+                if (isExpanded) {
+                    textWrapper.textContent = shortText + '...';
+                    moreButton.textContent = 'More';
+                } else {
+                    textWrapper.textContent = fullText;
+                    moreButton.textContent = 'Less';
+                }
+                isExpanded = !isExpanded;
+            });
+            panel.appendChild(moreButton);
+        }
 
         // Append the wrapper div to the churchFatherText div
         churchFatherText.appendChild(panel);
