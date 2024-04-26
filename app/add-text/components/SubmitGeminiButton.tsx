@@ -183,7 +183,6 @@ const addTextAIDataToDatabase = async (churchFather: string, churchText: string,
         const subcollectionRef = collection(fatherDocRef, 'texts');
         
         const churchFatherTextDocRef = doc(subcollectionRef, textKey);
-        console.log(textKey,churchFatherTextStore )
         await setDoc(churchFatherTextDocRef, churchFatherTextStore);
 };
 
