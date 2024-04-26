@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { getChurchFathers } from '../../similarity/page';
+import { collection, getDocs, setDoc, QueryDocumentSnapshot, DocumentData, doc } from 'firebase/firestore';
+import { db } from '../../helpers/firebase';
 
 const FathersDropdown = ({ setChurchFather }: any) => {
     const [churchFathers, setChurchFathers] = useState([]);
@@ -67,6 +68,13 @@ const FathersDropdown = ({ setChurchFather }: any) => {
             )}
         </div>
     );
+};
+
+
+const getChurchFathers = async (): Promise<string[]> => {
+    const querySnapshot = await getDocs(collection(db, 'church-fathers'));
+    const churchFatherNames = querySnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => doc.id);
+    return churchFatherNames;
 };
 
 export default FathersDropdown;

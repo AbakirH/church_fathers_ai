@@ -39,8 +39,10 @@ const SubmitGeminiButton = ({ churchFather, churchText, GeminiAPIKey }: { church
         const startingVerse: number = parseInt(verseGroups[3].split('-')[0]);
         const endingVerse: number = Number.isNaN(parseInt(verseGroups[3].split('-')[1])) ? startingVerse : parseInt(verseGroups[3].split('-')[1]);
         let NKJVText = '';
+        const nkjvJSON:any = nkjv;
+        const bible_book_abbreviations_json:any = bible_book_abbreviations;
         for (let i = startingVerse - 1; i < endingVerse; i++) {
-            const verseText = nkjv[bible_book_abbreviations[book]][String(chapter)][String(i)];
+            const verseText = nkjvJSON[bible_book_abbreviations_json[book]][String(chapter)][String(i)];
             NKJVText += verseText;
         }
 
@@ -54,7 +56,7 @@ const SubmitGeminiButton = ({ churchFather, churchText, GeminiAPIKey }: { church
         return verseObject;
     }
 
-    const createGeminiEmbedding = (text) => {
+    const createGeminiEmbedding = (text:string) => {
         return new Promise((resolve, reject) => {
             if (!API_KEY && GeminiAPIKey !== '' && GeminiAPIKey !== undefined) {
                 API_KEY = GeminiAPIKey;
@@ -63,7 +65,7 @@ const SubmitGeminiButton = ({ churchFather, churchText, GeminiAPIKey }: { church
                 reject(new Error("API_KEY is undefined"));
             }
 
-            const genAI = new GoogleGenerativeAI(API_KEY);
+            const genAI = new GoogleGenerativeAI(API_KEY as any);
             const embedModel = genAI.getGenerativeModel({
                 model: "models/text-embedding-004",
             });
@@ -88,7 +90,7 @@ const SubmitGeminiButton = ({ churchFather, churchText, GeminiAPIKey }: { church
                 reject(new Error("API_KEY is undefined"));
             }
 
-            const genAI = new GoogleGenerativeAI(API_KEY);
+            const genAI = new GoogleGenerativeAI(API_KEY as any);
             const embedModel = genAI.getGenerativeModel({
                 model: "models/gemini-1.0-pro-latest",
             });
@@ -145,7 +147,7 @@ const SubmitGeminiButton = ({ churchFather, churchText, GeminiAPIKey }: { church
                 if(churchFather === '' || churchText === '') {
                     alert('Please select a church father and input text that this person wrote');
                 }
-                let churchFatherTextStore = {
+                let churchFatherTextStore:any = {
                     text: churchText,
                     embedding: null,
                     verses: []
@@ -153,14 +155,14 @@ const SubmitGeminiButton = ({ churchFather, churchText, GeminiAPIKey }: { church
                 churchFatherTextStore.embedding = await createGeminiEmbedding(churchText);
 
                 const verses = verseExtractor(churchText);
-                verses.forEach(async verse => {
+                verses.forEach(async (verse:VerseReference) => {
                     verse.embedding =  await createGeminiEmbedding(verse.NKJVText);
                     verse.similarity = cosineSimilarity(verse.embedding.values, churchFatherTextStore.embedding.values);
                     let reference = verse.book + " " + verse.chapter + ":" + verse.startingVerse + "-" + verse.endingVerse;
                     verse.direct_reference_response = await checkIfVerseIsDirectReference(churchText, verse.NKJVText, reference);
                 });
                 churchFatherTextStore.verses = verses;
-                const textsInDatabase = await getDocs(collection(db, 'church-fathers', churchFather, "texts"));
+                const textsInDatabase:any = await getDocs(collection(db, 'church-fathers', churchFather, "texts"));
                 const textKey = 'text_' + String(parseInt(textsInDatabase.size + 1));
                 const response = await addTextAIDataToDatabase(churchFather, churchText, textKey, churchFatherTextStore); 
             }}
@@ -181,6 +183,7 @@ const addTextAIDataToDatabase = async (churchFather: string, churchText: string,
         const subcollectionRef = collection(fatherDocRef, 'texts');
         
         const churchFatherTextDocRef = doc(subcollectionRef, textKey);
+        console.log(textKey,churchFatherTextStore )
         await setDoc(churchFatherTextDocRef, churchFatherTextStore);
 };
 
@@ -192,7 +195,7 @@ interface VerseReference {
     NKJVText: string;
     embedding?: any;
     similarity?: number;
-    direct_reference_response?: string;
+    direct_reference_response?: string | unknown;
 }
 
 export default SubmitGeminiButton;
