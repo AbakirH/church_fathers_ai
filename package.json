@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.8.0",
     "firebase": "^10.11.0",
     "fs": "^0.0.1-security",
     "next": "14.2.2",

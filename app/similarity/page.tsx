@@ -68,7 +68,7 @@ const FathersSimilarity = async () => {
     );
 }
 
-const getChurchFathers = async () => {
+export const getChurchFathers = async (): Promise<string[]> => {
     const querySnapshot = await getDocs(collection(db, 'church-fathers'));
     const churchFatherNames = querySnapshot.docs.map((doc: QueryDocumentSnapshot<DocumentData>) => doc.id);
     return churchFatherNames;
