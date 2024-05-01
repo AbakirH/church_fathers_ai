@@ -13,32 +13,27 @@ const FathersSimilarity = async () => {
 
     const fatherNames = await getChurchFathers();
 
-    const handleFileChange = (event: any) => {
-        const file = event.target.files[0];
-        if (file && file.type === "application/json") {
-            const reader = new FileReader();
+    // const handleFileChange = (event: any) => {
+    //     const file = event.target.files[0];
+    //     if (file && file.type === "application/json") {
+    //         const reader = new FileReader();
 
-            reader.onload = async (e) => {
-                const fileTarget = e.target ?? {} as any;
-                const text = fileTarget.result ?? '' as string;
-                await addData(text);
-            };
+    //         reader.onload = async (e) => {
+    //             const fileTarget = e.target ?? {} as any;
+    //             const text = fileTarget.result ?? '' as string;
+    //             await addData(text);
+    //         };
 
-            reader.readAsText(file);
-        } else {
-            alert('Please upload a valid JSON file.');
-        }
-    };
+    //         reader.readAsText(file);
+    //     } else {
+    //         alert('Please upload a valid JSON file.');
+    //     }
+    // };
 
     return (
         <>
             <Navbar />
             <div className='p-2 flex justify-center items-center flex-col'>
-
-                <div>
-                    <input type="file" onChange={handleFileChange} />
-                    <button type="submit">Submit</button>
-                </div>
                 <h1 className='text-4xl font-bold mt-5'>Choose a Church Father</h1>
                 <div className='flex-row p-3'>
                     {fatherNames.map((name) => (
@@ -46,20 +41,20 @@ const FathersSimilarity = async () => {
                     ))}
                 </div>
                 <div id="text_results" className='flex flex-row p-2 justify-center items-center'>
-                    <button onClick={() => {
+                    <button id="backButton" onClick={() => {
                         currentIndex <= 0 ? currentIndex = church_father_texts.length - 1 : currentIndex -= 1;
                         rerenderText();
-                    }} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded h-10">
+                    }} className="hidden bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded h-10">
                         Previous
                     </button>
                     <div id="TextComparison" className='flex flex-col p-3 justify-center items-center'>
                         <div id="church_father_text"></div>
                         <div id="bible_verse_results" className='p-3 flex flex-row flex-wrap'></div>
                     </div>
-                    <button onClick={() => {
+                    <button id="nextButton"  onClick={() => {
                         currentIndex >= church_father_texts.length - 1 ? currentIndex = 0 : currentIndex += 1;
                         rerenderText();
-                    }} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded h-10">
+                    }} className="hidden bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded h-10">
                         Next
                     </button>
                 </div>
@@ -94,6 +89,13 @@ const rerenderText = () => {
         alert('No texts found for this church father')
         return;
     }
+    const backText = document.getElementById('backButton');
+    const nextText = document.getElementById('nextButton');
+    if (backText && nextText) {
+        backText.classList.remove('hidden');
+        nextText.classList.remove('hidden');
+    }
+
     const churchFatherText = document.getElementById('church_father_text');
     if (churchFatherText && churchFatherText.innerHTML !== '') {
         churchFatherText.innerHTML = '';
@@ -144,14 +146,29 @@ const rerenderText = () => {
     }
     if (bibleVerse && church_father_texts[currentIndex].verses) {
         church_father_texts[currentIndex].verses.forEach((verse: any) => {
-            console.log(verse);
             const bible_verse_result = document.createElement('div');
             bible_verse_result.classList.add('bg-gray-100', 'p-4', 'm-5', 'rounded', 'shadow-md', 'flex', 'flex-col', 'w-60');
 
             const verseElement = document.createElement('h3');
             verseElement.classList.add('text-2xl', 'font-bold');
 
-            verseElement.innerHTML = "Bible Reference: " + verse.book + " " + verse.chapter + ":" + verse.single_verse;
+            let bookVerses = '';
+             console.log(verse);
+            if(!verse.single_verse){
+                if(verse.startingVerse === verse.endingVerse){
+                    bookVerses = verse.startingVerse;
+                } else{
+                    bookVerses = verse.startingVerse + "-" + verse.endingVerse;
+                }
+            }else{
+                bookVerses = verse.single_verse;
+            }
+
+            if(!verse.similarity_score){
+                verse.similarity_score = verse.similarity;
+            }
+
+            verseElement.innerHTML = "Bible Reference: " + verse.book + " " + verse.chapter + ":" + bookVerses;
             bible_verse_result.appendChild(verseElement);
             const verseTextElement = document.createElement('p');
             verseTextElement.innerHTML = verse.nkjv_verse;
