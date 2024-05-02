@@ -1,6 +1,4 @@
 Flask
 Gunicorn
-google.api_core
 keras
-google.generativeai
 numpy

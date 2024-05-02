@@ -2,9 +2,6 @@ from flask import Flask, request, jsonify
 from keras.models import load_model
 import numpy as np
 
-import google.generativeai as genai
-import google.ai.generativelanguage as glm
-from google.api_core import retry
 import json
 import os
 
