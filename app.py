@@ -33,3 +33,7 @@ def test_classifier(version):
     # Add further code to use loaded_model and label_mapping as needed
 
     return predicted_label
+
+@app.route('/', methods=['GET'])
+def default_endpoint():
+    return "Welcome to the default endpoint of the classifier service!"
