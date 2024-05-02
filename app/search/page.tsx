@@ -9,15 +9,15 @@ import { Pinecone } from '@pinecone-database/pinecone';
 
 let church_father_texts: any = [];
 let currentIndex: number = 0;
-let API_KEY = process.env.GOOGLE_GEMINI_API_KEY;
-
-
-const pc = new Pinecone({
-  apiKey: process.env.PINECONE_API_KEY as any
-});
 
 const Search = () => {
     const [searchScope, setSearchScope] = useState('church-fathers'); // Default search scope
+    
+    let API_KEY = process.env.GOOGLE_GEMINI_API_KEY;
+
+    const pc = new Pinecone({
+        apiKey: process.env.PINECONE_API_KEY as any
+    });
 
     const handleSearch = async () => {
         // Execute search based on selected scope
@@ -27,6 +27,141 @@ const Search = () => {
             await searchTerm('church-fathers-texts');
         }
     };
+
+
+
+
+    const createGeminiEmbedding = (text:string) => {
+        return new Promise((resolve, reject) => {
+            if (!API_KEY) {
+                reject(new Error("API_KEY is undefined"));
+            }
+
+            const genAI = new GoogleGenerativeAI(API_KEY as any);
+            const embedModel = genAI.getGenerativeModel({
+                model: "models/text-embedding-004",
+            });
+
+            embedModel.embedContent([text, "SEMANTIC_SIMILARITY"])
+                .then((response) => {
+                    resolve(response.embedding);
+                })
+                .catch((error) => {
+                    console.error(error);
+                    reject(error);
+                });
+        });
+    }
+
+
+    function normalizeVector(vector:any) {
+        // Convert to array if it's not already
+        const vectorArray = Array.from(vector);
+        
+        // Calculate the Euclidean norm of the vector
+        const norm = Math.sqrt((vectorArray as number[]).reduce((acc, val) => acc + Math.pow(val, 2), 0));
+        
+        // Divide each element of the vector by its norm
+        const normalizedVector = vectorArray.map(val => val as any / norm);
+
+        return normalizedVector;
+    }
+
+    const searchTerm = async (pinecone_namespace:string) => {
+        const searchQueryElement = document.getElementById('searchQuery') as HTMLInputElement;
+        if(!searchQueryElement) {
+            return;
+        }
+        const searchQuery = searchQueryElement.value;
+        const searchResultsElement = document.getElementById('searchResults');
+        if (searchResultsElement) {
+            searchResultsElement.innerHTML = `
+                <div class="flex items-center justify-center h-48">
+                    <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
+                </div>`;
+        } else {
+            console.error("Element with id 'searchResults' not found.");
+        }
+        createGeminiEmbedding(searchQuery).then(async (searchQueryEmbedding:any) => {
+            const index = pc.index("church-fathers-ai");
+            const normalizedEmbedding = normalizeVector(searchQueryEmbedding.values);
+            const stats = await index.describeIndexStats();
+            const queryResponse = await index.namespace(pinecone_namespace).query({
+                vector: normalizedEmbedding,
+                topK: 15,
+                includeValues: true,
+            });
+            const matches = queryResponse.matches;
+            let topTenTexts:any[] = [];
+            const promises:any[] = [];
+
+            matches.forEach((match) => {
+                let churchFatherTextDocRef:any;
+                let textId:string;
+                let churchFatherId:string;
+                if(pinecone_namespace==='bible-data') {
+                    textId = match.id.toString();
+                    churchFatherTextDocRef = doc(db, 'bible-data', "nkjv-bible", 'bible-labels', textId);
+                }else{
+                    const churchFatherList = match.id.split('_text_');
+                    churchFatherId = churchFatherList[0].replace(/_/g, " ");
+                    textId = "text_" + churchFatherList[1];
+                    churchFatherTextDocRef = doc(db, 'church-fathers', churchFatherId, 'texts', textId);
+                }
+                
+                // Add promise to the promises array
+                promises.push(
+                    getDoc(churchFatherTextDocRef).then(textDocSnapshot => {
+                        if (textDocSnapshot.exists()) {
+                            const textData:any = textDocSnapshot.data();
+                            if(pinecone_namespace==='bible-data') {
+                                topTenTexts.push({"text":textData.verse, "label": textId});
+                            }
+                            else{
+                                topTenTexts.push({"text":textData.text, "label": churchFatherId.toString()});
+                            }
+                        } else {
+                            console.log(textId, 'not found');
+                        }
+                    }).catch(error => {
+                        console.error('Error getting document:', error);
+                    })
+                );
+            });
+
+            // Wait for all promises to resolve
+            Promise.all(promises).then(() => {
+                // Generate HTML once all promises are resolved
+                let topTenHTML = '';
+                if(pinecone_namespace==='bible-data') {
+                topTenHTML = topTenTexts.map(textObject => `
+                    <div class="bg-gray-100 p-4 rounded-md mb-4">
+                        <h2 class="text-xl font-semibold mb-2">${textObject.label.replace(/(_)(?=[^_]*$)/, ":$1").replace(/_/g, " ").replace(/^(\d+)/, "$1 ")}</h2>
+                        <p>${textObject.text}</p>
+                    </div>
+                `).join('');
+
+                }else{
+                    topTenHTML = topTenTexts.map(textObject => `
+                    <div class="bg-gray-100 p-4 rounded-md mb-4">
+                        <h2 class="text-xl font-semibold mb-2">${textObject.label} Text</h2>
+                        <p>${textObject.text}</p>
+                    </div>
+                `).join('');
+                }
+
+                const searchResultsElement = document.getElementById('searchResults');
+                if (searchResultsElement) {
+                    // Update the searchResults div with the top ten results HTML
+                    searchResultsElement.innerHTML = topTenHTML;
+                } else {
+                    console.error("Element with id 'searchResults' not found.");
+                }
+            }).catch(error => {
+                console.error('Error fetching documents:', error);
+            });
+        });
+    }
     return (
         <>
             <Navbar />
@@ -48,138 +183,4 @@ const Search = () => {
         </>
     );
 }
-
-const createGeminiEmbedding = (text:string) => {
-    return new Promise((resolve, reject) => {
-        if (!API_KEY) {
-            reject(new Error("API_KEY is undefined"));
-        }
-
-        const genAI = new GoogleGenerativeAI(API_KEY as any);
-        const embedModel = genAI.getGenerativeModel({
-            model: "models/text-embedding-004",
-        });
-
-        embedModel.embedContent([text, "SEMANTIC_SIMILARITY"])
-            .then((response) => {
-                resolve(response.embedding);
-            })
-            .catch((error) => {
-                console.error(error);
-                reject(error);
-            });
-    });
-}
-
-
-function normalizeVector(vector:any) {
-    // Convert to array if it's not already
-    const vectorArray = Array.from(vector);
-    
-    // Calculate the Euclidean norm of the vector
-    const norm = Math.sqrt((vectorArray as number[]).reduce((acc, val) => acc + Math.pow(val, 2), 0));
-    
-    // Divide each element of the vector by its norm
-    const normalizedVector = vectorArray.map(val => val as any / norm);
-
-    return normalizedVector;
-}
-
-const searchTerm = async (pinecone_namespace:string) => {
-    const searchQueryElement = document.getElementById('searchQuery') as HTMLInputElement;
-    if(!searchQueryElement) {
-        return;
-    }
-    const searchQuery = searchQueryElement.value;
-    const searchResultsElement = document.getElementById('searchResults');
-    if (searchResultsElement) {
-        searchResultsElement.innerHTML = `
-            <div class="flex items-center justify-center h-48">
-                <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
-            </div>`;
-    } else {
-        console.error("Element with id 'searchResults' not found.");
-    }
-    createGeminiEmbedding(searchQuery).then(async (searchQueryEmbedding:any) => {
-        const index = pc.index("church-fathers-ai");
-        const normalizedEmbedding = normalizeVector(searchQueryEmbedding.values);
-        const stats = await index.describeIndexStats();
-        const queryResponse = await index.namespace(pinecone_namespace).query({
-            vector: normalizedEmbedding,
-            topK: 15,
-            includeValues: true,
-        });
-        const matches = queryResponse.matches;
-        let topTenTexts:any[] = [];
-        const promises:any[] = [];
-
-        matches.forEach((match) => {
-            let churchFatherTextDocRef:any;
-            let textId:string;
-            let churchFatherId:string;
-            if(pinecone_namespace==='bible-data') {
-                textId = match.id.toString();
-                churchFatherTextDocRef = doc(db, 'bible-data', "nkjv-bible", 'bible-labels', textId);
-            }else{
-                const churchFatherList = match.id.split('_text_');
-                churchFatherId = churchFatherList[0].replace(/_/g, " ");
-                textId = "text_" + churchFatherList[1];
-                churchFatherTextDocRef = doc(db, 'church-fathers', churchFatherId, 'texts', textId);
-            }
-            
-            // Add promise to the promises array
-            promises.push(
-                getDoc(churchFatherTextDocRef).then(textDocSnapshot => {
-                    if (textDocSnapshot.exists()) {
-                        const textData:any = textDocSnapshot.data();
-                        if(pinecone_namespace==='bible-data') {
-                            topTenTexts.push({"text":textData.verse, "label": textId});
-                        }
-                        else{
-                            topTenTexts.push({"text":textData.text, "label": churchFatherId.toString()});
-                        }
-                    } else {
-                        console.log(textId, 'not found');
-                    }
-                }).catch(error => {
-                    console.error('Error getting document:', error);
-                })
-            );
-        });
-
-        // Wait for all promises to resolve
-        Promise.all(promises).then(() => {
-            // Generate HTML once all promises are resolved
-            console.log(topTenTexts);
-            let topTenHTML = '';
-            if(pinecone_namespace==='bible-data') {
-            topTenHTML = topTenTexts.map(textObject => `
-                <div class="bg-gray-100 p-4 rounded-md mb-4">
-                    <h2 class="text-xl font-semibold mb-2">${textObject.label.replace(/(_)(?=[^_]*$)/, ":$1").replace(/_/g, " ").replace(/^(\d+)/, "$1 ")}</h2>
-                    <p>${textObject.text}</p>
-                </div>
-            `).join('');
-
-            }else{
-                topTenHTML = topTenTexts.map(textObject => `
-                <div class="bg-gray-100 p-4 rounded-md mb-4">
-                    <h2 class="text-xl font-semibold mb-2">${textObject.label} Text</h2>
-                    <p>${textObject.text}</p>
-                </div>
-            `).join('');
-            }
-
-            const searchResultsElement = document.getElementById('searchResults');
-            if (searchResultsElement) {
-                // Update the searchResults div with the top ten results HTML
-                searchResultsElement.innerHTML = topTenHTML;
-            } else {
-                console.error("Element with id 'searchResults' not found.");
-            }
-        }).catch(error => {
-            console.error('Error fetching documents:', error);
-        });
-    });
-}
-
 export default Search;
