@@ -139,8 +139,8 @@ const SubmitGeminiButton = ({ churchFather, churchText, GeminiAPIKey }: { church
     }
 
 
-    async function processVerses(verses, churchFather, churchText, churchFatherTextStore) {
-        const processedVerses = await Promise.all(verses.map(async (verse) => {
+    async function processVerses(verses: any, churchFather: any, churchText: any, churchFatherTextStore: any): Promise<any> {
+        const processedVerses = await Promise.all(verses.map(async (verse:any) => {
             verse.embedding = await createGeminiEmbedding(verse.nkjv_verse);
             verse.similarity_score = cosineSimilarity(verse.embedding.values, churchFatherTextStore.embedding.values);
             let reference = `${verse.book} ${verse.chapter}:${verse.startingVerse}-${verse.endingVerse}`;
@@ -151,7 +151,7 @@ const SubmitGeminiButton = ({ churchFather, churchText, GeminiAPIKey }: { church
         churchFatherTextStore.verses = processedVerses;
 
         const textsInDatabase = await getDocs(collection(db, 'church-fathers', churchFather, "texts"));
-        const textKey = 'text_' + String(parseInt(textsInDatabase.size + 1));
+        const textKey = 'text_' + (textsInDatabase.size + 1).toString();
         const response = await addTextAIDataToDatabase(churchFather, churchText, textKey, churchFatherTextStore);
 
         return response;

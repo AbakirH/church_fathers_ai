@@ -13,26 +13,31 @@ const FathersSimilarity = async () => {
 
     const fatherNames = await getChurchFathers();
 
-    // const handleFileChange = (event: any) => {
-    //     const file = event.target.files[0];
-    //     if (file && file.type === "application/json") {
-    //         const reader = new FileReader();
+    const handleFileChange = (event: any) => {
+        const file = event.target.files[0];
+        if (file && file.type === "application/json") {
+            const reader = new FileReader();
 
-    //         reader.onload = async (e) => {
-    //             const fileTarget = e.target ?? {} as any;
-    //             const text = fileTarget.result ?? '' as string;
-    //             await addData(text);
-    //         };
+            reader.onload = async (e) => {
+                const fileTarget = e.target ?? {} as any;
+                const text = fileTarget.result ?? '' as string;
+                await addData(text);
+            };
 
-    //         reader.readAsText(file);
-    //     } else {
-    //         alert('Please upload a valid JSON file.');
-    //     }
-    // };
+            reader.readAsText(file);
+        } else {
+            alert('Please upload a valid JSON file.');
+        }
+    };
 
     return (
         <>
             <Navbar />
+
+                <div>
+                    <input type="file" onChange={handleFileChange} />
+                    <button type="submit">Submit</button>
+                </div>
             <div className='p-2 flex justify-center items-center flex-col'>
                 <h1 className='text-4xl font-bold mt-5'>Choose a Church Father</h1>
                 <div className='flex-row p-3'>
@@ -153,7 +158,6 @@ const rerenderText = () => {
             verseElement.classList.add('text-2xl', 'font-bold');
 
             let bookVerses = '';
-             console.log(verse);
             if(!verse.single_verse){
                 if(verse.startingVerse === verse.endingVerse){
                     bookVerses = verse.startingVerse;
