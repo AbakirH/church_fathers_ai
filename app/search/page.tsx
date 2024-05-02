@@ -110,33 +110,33 @@ const searchTerm = async (pinecone_namespace:string) => {
             includeValues: true,
         });
         const matches = queryResponse.matches;
-        let topTenTexts:string[] = [];
+        let topTenTexts:any[] = [];
         const promises:any[] = [];
 
         matches.forEach((match) => {
             let churchFatherTextDocRef:any;
             let textId:string;
+            let churchFatherId:string;
             if(pinecone_namespace==='bible-data') {
                 textId = match.id.toString();
                 churchFatherTextDocRef = doc(db, 'bible-data', "nkjv-bible", 'bible-labels', textId);
             }else{
                 const churchFatherList = match.id.split('_text_');
-                const churchFatherId = churchFatherList[0].replace(/_/g, " ");
+                churchFatherId = churchFatherList[0].replace(/_/g, " ");
                 textId = "text_" + churchFatherList[1];
                 churchFatherTextDocRef = doc(db, 'church-fathers', churchFatherId, 'texts', textId);
             }
-
+            
             // Add promise to the promises array
             promises.push(
                 getDoc(churchFatherTextDocRef).then(textDocSnapshot => {
                     if (textDocSnapshot.exists()) {
                         const textData:any = textDocSnapshot.data();
                         if(pinecone_namespace==='bible-data') {
-                            topTenTexts.push(textData.verse);
+                            topTenTexts.push({"text":textData.verse, "label": textId});
                         }
                         else{
-                            topTenTexts.push(textData.text);
-
+                            topTenTexts.push({"text":textData.text, "label": churchFatherId.toString()});
                         }
                     } else {
                         console.log(textId, 'not found');
@@ -150,13 +150,24 @@ const searchTerm = async (pinecone_namespace:string) => {
         // Wait for all promises to resolve
         Promise.all(promises).then(() => {
             // Generate HTML once all promises are resolved
-            const topTenHTML = topTenTexts.map(textObject => `
+            console.log(topTenTexts);
+            let topTenHTML = '';
+            if(pinecone_namespace==='bible-data') {
+            topTenHTML = topTenTexts.map(textObject => `
                 <div class="bg-gray-100 p-4 rounded-md mb-4">
-                    <h2 class="text-xl font-semibold mb-2">Result</h2>
-                    <p>${textObject}</p>
+                    <h2 class="text-xl font-semibold mb-2">${textObject.label.replace(/(_)(?=[^_]*$)/, ":$1").replace(/_/g, " ").replace(/^(\d+)/, "$1 ")}</h2>
+                    <p>${textObject.text}</p>
                 </div>
             `).join('');
 
+            }else{
+                topTenHTML = topTenTexts.map(textObject => `
+                <div class="bg-gray-100 p-4 rounded-md mb-4">
+                    <h2 class="text-xl font-semibold mb-2">${textObject.label} Text</h2>
+                    <p>${textObject.text}</p>
+                </div>
+            `).join('');
+            }
 
             const searchResultsElement = document.getElementById('searchResults');
             if (searchResultsElement) {
