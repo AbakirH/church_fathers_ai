@@ -5,9 +5,13 @@ export default function Home() {
   return (
     <>
       <Navbar></Navbar>
+      <header className="bg-cover bg-center bg-no-repeat py-40" style={{ backgroundImage: 'url("https://restlesspilgrim.net/blog/wp-content/uploads/2017/11/Fathers.jpg")' }}>
+        <div className="max-w-screen-lg mx-auto text-center text-white p-4 border-2 border-white rounded-lg bg-black bg-opacity-50">
+            <h1 className="text-5xl font-bold mb-4 shadow">Welcome to Divine Doctrine</h1>
+            <h2 className="text-xl font-semibold shadow-md">Spreading the eternal truths of the Early Christian Church, established by the apostles, to uplift and inspire Christians globally.</h2>
+        </div>
+      </header>
       <div className="max-w-screen-lg mx-auto mt-8">
-            <h1 className="text-3xl font-semibold mb-4">Welcome to Divine Doctrine</h1>
-            <h2>Spreading the eternal truths of the Early Christian Church, established by the apostles, to uplift and inspire Christians globally. </h2>
             <div className="mb-8">
                 <h2 className="text-lg font-semibold mb-2">Text Similarities:</h2>
                 <div className="bg-gray-100 p-4 rounded-md">
