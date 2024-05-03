@@ -1,11 +1,14 @@
 from flask import Flask, request, jsonify
 from keras.models import load_model
+from flask_cors import CORS, cross_origin
 import numpy as np
 
 import json
 import os
 
 app = Flask(__name__)
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
 
 @app.after_request
 def add_cors_headers(response):

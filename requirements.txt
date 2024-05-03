@@ -3,3 +3,4 @@ Gunicorn
 keras
 numpy
 tensorflow
+flask_cors
