@@ -36,9 +36,18 @@ export default function AddText  () {
                         id="api_key"
                         onChange={(e) => setAPIKey(e.target.value)}
                         className="h-10 w-5/6 border-2 border-gray-300 bg-white px-5 py-3 rounded-lg text-sm focus:outline-none"
-                    />                </div>
+                    />                
+                </div>
                 <div className='flex-row flex justify-center items-center pb-5 w-5/6'>
                     <SubmitGeminiButton churchFather={selectedFather || ''} churchText={churchText} GeminiAPIKey={api_key} />
+                </div>
+                <div>
+                    <h1 id="verses_found_in_text" className="hidden text-xl font-semibold">Verses Found in text:</h1>
+                    <div id="bible_verse_results" className='p-3 flex flex-row flex-wrap w-100'></div>
+                </div>
+                <div>
+                    <h1 id="classified_verses_found_in_text" className="hidden text-xl font-semibold">Model Classified Verses Found in text:</h1>
+                    <div id="classified_bible_verse_results" className='p-3 flex flex-row flex-wrap w-100'></div>
                 </div>
             </div >
         </>

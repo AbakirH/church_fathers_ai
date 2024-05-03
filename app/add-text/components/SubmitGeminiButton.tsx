@@ -109,6 +109,34 @@ const SubmitGeminiButton = ({ churchFather, churchText, GeminiAPIKey }: { church
         });
     }
 
+    const checkIfVerseIsValid = (churchFatherText:string, nkjv_verse:string, reference:string) => {
+        return new Promise((resolve, reject) => {
+            if (!API_KEY && GeminiAPIKey !== '' && GeminiAPIKey !== undefined) {
+                API_KEY = GeminiAPIKey;
+            }
+            if (!API_KEY) {
+                reject(new Error("API_KEY is undefined"));
+            }
+
+            const genAI = new GoogleGenerativeAI(API_KEY as any);
+            const embedModel = genAI.getGenerativeModel({
+                model: "models/gemini-1.0-pro-latest",
+            });
+            let prompt = "Father Text: " +
+                     churchFatherText + " Bible Verse: " + nkjv_verse + " " + reference +
+                    "\n Between these two options, tell me if the Bible verse correlates " + 
+                    "to the church father's text or not by using yes or no. " +
+                    "One word response max based on the options.";
+            let response = embedModel.generateContent(prompt).then((result) => {
+                    resolve(result.response.text());
+                })
+                .catch((error) => {
+                    console.error(error);
+                    reject(error);
+                });
+        });
+    }
+
     function cosineSimilarity(v1: number[], v2: number[]): number {
         const v1Norm = vectorNorm(v1);
         const v2Norm = vectorNorm(v2);
@@ -149,18 +177,76 @@ const SubmitGeminiButton = ({ churchFather, churchText, GeminiAPIKey }: { church
         }));
 
         churchFatherTextStore.verses = processedVerses;
+        
+    }
 
-        const textsInDatabase = await getDocs(collection(db, 'church-fathers', churchFather, "texts"));
-        const textKey = 'text_' + (textsInDatabase.size + 1).toString();
-        const response = await addTextAIDataToDatabase(churchFather, churchText, textKey, churchFatherTextStore);
+    async function fetchAndClassifyText(classifier_versions, data) {
+    const fetchPromises = classifier_versions.map(version => {
+        const url = `https://church-fathers-ai.onrender.com/${version}`;
+        return fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch data');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data.success) {
+                throw new Error('No success in response data');
+            }
+            const [book, chapter, startingVerse] = data.predicted_label.split('_');
+            const verseText = nkjv[book][chapter][startingVerse];
+            return {
+                version,
+                book,
+                chapter,
+                startingVerse,
+                endingVerse: startingVerse,
+                nkjv_verse: verseText
+            };
+        })
+        .catch(error => {
+            console.error('Error fetching data for version', version, error.message);
+            return null;
+        });
+    });
+    return Promise.all(fetchPromises);
+}
 
-        return response;
+    async function processAndClassifyVerses(validResults, churchFatherTextStore, verses) {
+        const processedVerses = [];
+
+        for (const verse of validResults) {
+            verse.embedding = await createGeminiEmbedding(verse.nkjv_verse);
+            verse.similarity_score = cosineSimilarity(verse.embedding.values, churchFatherTextStore.embedding.values);
+
+            let reference = `${verse.book} ${verse.chapter}:${verse.startingVerse}`;
+            verse.direct_reference_response = await checkIfVerseIsDirectReference(churchFatherTextStore.text, verse.nkjv_verse, reference);
+            verse.is_valid = await checkIfVerseIsValid(churchFatherTextStore.text, verse.nkjv_verse, reference);
+            processedVerses.push(verse);
+            if(verse.is_valid.toLowerCase() === 'yes'){
+                verses.push(verse);
+            }
+        }
+
+        // After all verses are processed, render them
+        renderClassifiedVerses(processedVerses);
     }
 
 
     return (
         <button id="submit_button"
             onClick={async () => {
+                const bibleVerse = document.getElementById('classified_bible_verse_results');
+                if (bibleVerse && bibleVerse.querySelectorAll('div').length > 0) {
+                    bibleVerse.innerHTML = '';
+                }
                 if(churchFather === '' || churchText === '') {
                     alert('Please select a church father and input text that this person wrote');
                 }
@@ -170,13 +256,40 @@ const SubmitGeminiButton = ({ churchFather, churchText, GeminiAPIKey }: { church
                     verses: []
                 }
                 churchFatherTextStore.embedding = await createGeminiEmbedding(churchText);
-
                 const verses = verseExtractor(churchText);
-                processVerses(verses, churchFather, churchText, churchFatherTextStore);
-            }}
+                await processVerses(verses, churchFather, churchText, churchFatherTextStore);
+
+                renderParsedVerses(verses);
+                // Data to be sent in the POST request
+                const text_vector_data = {
+                    text_vector: churchFatherTextStore.embedding.values,
+                };
+                const classifier_versions = ['v1', 'v2', 'v3', 'v4'];
+                // Make the POST request
+                try {
+                    const classifiedVerses = await fetchAndClassifyText(classifier_versions,text_vector_data);
+                    // Filter out any nulls if there were errors
+                    const validResults = classifiedVerses.filter(result => result !== null);
+
+                    processAndClassifyVerses(validResults, churchFatherTextStore, verses);
+
+                    console.log('Classified verses:', validResults);                    
+                } catch (error) {
+                    console.error('An error occurred while processing classifications:', error);
+                }
+
+                const textsInDatabase = await getDocs(collection(db, 'church-fathers', churchFather, "texts"));
+                const textKey = 'text_' + (textsInDatabase.size + 1).toString();
+                const response = await addTextAIDataToDatabase(churchFather, churchText, textKey, churchFatherTextStore);
+
+                return response;     
+                }
+            }
+
             className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Submit</button>
     );
 };
+
 
 const addTextAIDataToDatabase = async (churchFather: string, churchText: string, textKey:string , churchFatherTextStore: any) => {
 
@@ -195,6 +308,116 @@ const addTextAIDataToDatabase = async (churchFather: string, churchText: string,
 };
 
 
+const renderParsedVerses = (verses: any) => {
+    const bibleVerse = document.getElementById('bible_verse_results');
+    if (bibleVerse && bibleVerse.querySelectorAll('div').length > 0) {
+        bibleVerse.innerHTML = '';
+    }
+        const verses_found_in_text = document.getElementById('verses_found_in_text');
+        if(verses_found_in_text){
+            verses_found_in_text.classList.remove('hidden');
+        }
+        if (bibleVerse && verses) {
+            verses.forEach((verse: any) => {
+                const bible_verse_result = document.createElement('div');
+                bible_verse_result.classList.add('bg-gray-100', 'p-4', 'm-5', 'rounded', 'shadow-md', 'flex', 'flex-col', 'w-60');
+
+                const verseElement = document.createElement('h3');
+                verseElement.classList.add('text-2xl', 'font-bold');
+
+                let bookVerses = '';
+                if(!verse.single_verse){
+                    if(verse.startingVerse === verse.endingVerse){
+                        bookVerses = verse.startingVerse;
+                    } else{
+                        bookVerses = verse.startingVerse + "-" + verse.endingVerse;
+                    }
+                }else{
+                    bookVerses = verse.single_verse;
+                }
+
+                if(!verse.similarity_score){
+                    verse.similarity_score = verse.similarity;
+                }
+
+                verseElement.innerHTML = "Bible Reference: " + verse.book + " " + verse.chapter + ":" + bookVerses;
+                bible_verse_result.appendChild(verseElement);
+                const verseTextElement = document.createElement('p');
+                verseTextElement.innerHTML = verse.nkjv_verse;
+                verseTextElement.classList.add('p-2');
+                bible_verse_result.appendChild(verseTextElement);
+
+                const similarityElement = document.createElement('p');
+                similarityElement.innerHTML = "<strong>Similarity:</strong> " + verse.similarity_score;
+                bible_verse_result.appendChild(similarityElement);
+
+                const directReferenceElement = document.createElement('p');
+                directReferenceElement.innerHTML = "<strong>Reference Type:</strong> " + verse.direct_reference_response;
+                bible_verse_result.appendChild(directReferenceElement);
+
+                bibleVerse.appendChild(bible_verse_result);
+            });
+        }
+};
+
+
+const renderClassifiedVerses = (verses: any) => {
+    const classified_bible_verse_results = document.getElementById('classified_bible_verse_results');
+
+    if (classified_bible_verse_results && classified_bible_verse_results.querySelectorAll('div').length > 0) {
+            classified_bible_verse_results.innerHTML = '';
+    }
+    const classified_verses_found_in_text = document.getElementById('classified_verses_found_in_text');
+    if(classified_verses_found_in_text){
+        classified_verses_found_in_text.classList.remove('hidden');
+    }
+        if (classified_bible_verse_results && verses) {
+            verses.forEach((verse: any) => {
+                const bible_verse_result = document.createElement('div');
+                bible_verse_result.classList.add('bg-gray-100', 'p-4', 'm-5', 'rounded', 'shadow-md', 'flex', 'flex-col', 'w-60');
+
+                const verseElement = document.createElement('h3');
+                verseElement.classList.add('text-2xl', 'font-bold');
+
+                let bookVerses = '';
+                if(!verse.single_verse){
+                    if(verse.startingVerse === verse.endingVerse){
+                        bookVerses = verse.startingVerse;
+                    } else{
+                        bookVerses = verse.startingVerse + "-" + verse.endingVerse;
+                    }
+                }else{
+                    bookVerses = verse.single_verse;
+                }
+
+                if(!verse.similarity_score){
+                    verse.similarity_score = verse.similarity;
+                }
+
+                verseElement.innerHTML = "Bible Reference: " + verse.book + " " + verse.chapter + ":" + bookVerses;
+                bible_verse_result.appendChild(verseElement);
+                const verseTextElement = document.createElement('p');
+                verseTextElement.innerHTML = verse.nkjv_verse;
+                verseTextElement.classList.add('p-2');
+                bible_verse_result.appendChild(verseTextElement);
+
+                const similarityElement = document.createElement('p');
+                similarityElement.innerHTML = "<strong>Similarity:</strong> " + verse.similarity_score;
+                bible_verse_result.appendChild(similarityElement);
+
+                const directReferenceElement = document.createElement('p');
+                directReferenceElement.innerHTML = "<strong>Reference Type:</strong> " + verse.direct_reference_response;
+                bible_verse_result.appendChild(directReferenceElement);
+
+                const is_valid = document.createElement('p');
+                is_valid.innerHTML = "<strong>Is Verse related to text:</strong> " + verse.is_valid;
+                bible_verse_result.appendChild(is_valid);
+
+                classified_bible_verse_results.appendChild(bible_verse_result);
+            });
+        }
+};
+
 interface VerseReference {
     book: string;
     chapter: number;
@@ -204,6 +427,8 @@ interface VerseReference {
     embedding?: any;
     similarity?: number;
     direct_reference_response?: string | unknown;
+    is_valid?: string | unknown;
+    version?: string| unknown;
 }
 
 export default SubmitGeminiButton;
