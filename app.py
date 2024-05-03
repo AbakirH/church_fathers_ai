@@ -8,20 +8,22 @@ import os
 
 app = Flask(__name__)
 cors = CORS(app)
-app.config['CORS_HEADERS'] = 'Content-Type'
 
-@app.after_request
-def add_cors_headers(response):
-    response.headers.add("Access-Control-Allow-Origin", "*")
-    response.headers.add("Access-Control-Allow-Headers", "*")
-    response.headers.add("Access-Control-Allow-Methods", "*")
-    return response
+# @app.after_request
+# def add_cors_headers(response):
+#     response.headers.add("Access-Control-Allow-Origin", "*")
+#     response.headers.add("Access-Control-Allow-Headers", "*")
+#     response.headers.add("Access-Control-Allow-Methods", "*")
+#     return response
 
 @app.route('/<version>', methods=['POST'])
-@cross_origin()
 def test_classifier(version):
     if not request.is_json:
-        return "Missing JSON in request", 400
+        response = {
+            "predicted_label": "Missing JSON in request",
+            "success":  false 
+        }
+        return jsonify(response)
 
     # Extract the JSON data
     data = request.get_json()
@@ -41,7 +43,12 @@ def test_classifier(version):
     predicted_label_index = np.argmax(predictions)
     predicted_label = label_mapping[str(predicted_label_index)]
 
-    return predicted_label
+    response = {
+        "predicted_label": predicted_label,
+        "success": True  
+    }
+
+    return jsonify(response)
 
 @app.route('/', methods=['GET'])
 def default_endpoint():
