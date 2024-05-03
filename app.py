@@ -16,6 +16,7 @@ def add_cors_headers(response):
     return response
 
 @app.route('/<version>', methods=['POST'])
+@cross_origin()
 def test_classifier(version):
     if not request.is_json:
         return "Missing JSON in request", 400
