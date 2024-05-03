@@ -1,3 +1,5 @@
+Useing render to host my python api, for by classification, because trying to convert keras models to javascript compatible files is not the easiest thing in the world.  
+
 This is the code for classification models trained with Gemini, Text-embedding 004
 
 
