@@ -9,12 +9,12 @@ app = Flask(__name__)
 
 @app.route('/<version>', methods=['POST'])
 def test_classifier(version):
-    # if not request.is_json:
-    #     return "Missing JSON in request", 400
+    if not request.is_json:
+        return "Missing JSON in request", 400
 
-    # # Extract the JSON data
-    # data = request.get_json()
-    # input_embedding = data.get('text_vector')
+    # Extract the JSON data
+    data = request.get_json()
+    input_embedding = data.get('text_vector')
 
     
     label_mapping_path = os.path.join(app.root_path, 'classifiers', f'bible_label_mapping_{version}.json')
