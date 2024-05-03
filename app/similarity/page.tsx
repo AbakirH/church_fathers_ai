@@ -34,36 +34,37 @@ const FathersSimilarity = async () => {
         <>
             <Navbar />
 
-                <div>
+                {/* <div>
                     <input type="file" onChange={handleFileChange} />
                     <button type="submit">Submit</button>
-                </div>
-            <div className='p-2 flex justify-center items-center flex-col'>
-                <h1 className='text-4xl font-bold mt-5'>Choose a Church Father</h1>
-                <div className='flex-row p-3'>
-                    {fatherNames.map((name) => (
-                        <button onClick={async () => await getChurchFatherTexts(name)} key={name} type="button" className="mt-5 text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">{name}</button>
-                    ))}
-                </div>
-                <div id="text_results" className='flex flex-row p-2 justify-center items-center'>
-                    <button id="backButton" onClick={() => {
-                        currentIndex <= 0 ? currentIndex = church_father_texts.length - 1 : currentIndex -= 1;
-                        rerenderText();
-                    }} className="hidden bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded h-10">
-                        Previous
-                    </button>
-                    <div id="TextComparison" className='flex flex-col p-3 justify-center items-center'>
-                        <div id="church_father_text"></div>
-                        <div id="bible_verse_results" className='p-3 flex flex-row flex-wrap'></div>
+                </div> */}
+                <div className='p-2 flex justify-center items-center flex-col'>
+                    <h1 className='text-4xl font-bold mt-5'>Choose a Church Father</h1>
+                    <div className='flex-row p-3'>
+                        {fatherNames.map((name) => (
+                            <button onClick={async () => await getChurchFatherTexts(name)} key={name} type="button" className="mt-5 text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">{name}</button>
+                        ))}
                     </div>
-                    <button id="nextButton"  onClick={() => {
-                        currentIndex >= church_father_texts.length - 1 ? currentIndex = 0 : currentIndex += 1;
-                        rerenderText();
-                    }} className="hidden bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded h-10">
-                        Next
-                    </button>
+                    <div id="text_results" className='flex flex-row p-2 justify-center items-center'>
+                        <button id="backButton" onClick={() => {
+                            currentIndex <= 0 ? currentIndex = church_father_texts.length - 1 : currentIndex -= 1;
+                            rerenderText();
+                        }} className="hidden bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded mr-2">
+                            &lt;
+                        </button>
+                        <div id="TextComparison" className='flex flex-col p-3 justify-center items-center'>
+                            <div id="church_father_text"></div>
+                            <div id="bible_verse_results" className='p-3 flex flex-row flex-wrap'></div>
+                        </div>
+                        <button id="nextButton"  onClick={() => {
+                            currentIndex >= church_father_texts.length - 1 ? currentIndex = 0 : currentIndex += 1;
+                            rerenderText();
+                        }} className="hidden bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded ml-2">
+                            &gt;
+                        </button>
+                    </div>
                 </div>
-            </div>
+
         </>
     );
 }
