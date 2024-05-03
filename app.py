@@ -24,7 +24,7 @@ def test_classifier(version):
     model_path = os.path.join(app.root_path, 'classifiers', f'bible_label_classifier_{version}.keras')
     loaded_model = load_model(model_path)
     
-    predictions = loaded_model.predict(np.array([input_embedding]))
+    # predictions = loaded_model.predict(np.array([input_embedding]))
 
     # # Interpret the predictions (similar to before)
     # predicted_label_index = np.argmax(predictions)
