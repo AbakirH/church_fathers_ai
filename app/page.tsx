@@ -11,7 +11,7 @@ export default function Home() {
             <h2 className="text-xl font-semibold shadow-md">Spreading the eternal truths of the Early Christian Church, established by the apostles, to uplift and inspire Christians globally.</h2>
         </div>
       </header>
-      <div className="max-w-screen-lg mx-auto mt-8">
+      <div className="max-w-screen-lg mx-auto mt-8 p-5">
             <div className="mb-8">
                 <h2 className="text-lg font-semibold mb-2">
                     <a href="/similarity" className="text-blue-500 hover:text-blue-700">Text Similarities</a>
