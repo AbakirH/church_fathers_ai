@@ -7,6 +7,11 @@ import os
 
 app = Flask(__name__)
 
+@app.after_request
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    return response
+
 @app.route('/<version>', methods=['POST'])
 def test_classifier(version):
     if not request.is_json:
