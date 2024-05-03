@@ -4,10 +4,17 @@ import nkjv from "../../../public/bible_data/nkjv.json";
 import bible_book_abbreviations from "../../../public/bible_data/bible_book_abbreviations.json";
 import { collection, getDocs, setDoc, QueryDocumentSnapshot, DocumentData, doc } from 'firebase/firestore';
 import { db } from '../../helpers/firebase';
+import { Pinecone } from '@pinecone-database/pinecone';
 
 const SubmitGeminiButton = ({ churchFather, churchText, GeminiAPIKey }: { churchFather: string, churchText: string, GeminiAPIKey: string }) => {
 
     let API_KEY = process.env.GOOGLE_GEMINI_API_KEY;
+
+    let Pinecone_API_KEY = process.env.GOOGLE_GEMINI_API_KEY;
+
+    const pc = new Pinecone({
+        apiKey: process.env.PINECONE_API_KEY as any
+    });
 
     const verseExtractor = (text: string) => {
         const verseRegex = [
@@ -239,6 +246,19 @@ const SubmitGeminiButton = ({ churchFather, churchText, GeminiAPIKey }: { church
         renderClassifiedVerses(processedVerses);
     }
 
+    function normalizeVector(vector:any) {
+        // Convert to array if it's not already
+        const vectorArray = Array.from(vector);
+        
+        // Calculate the Euclidean norm of the vector
+        const norm = Math.sqrt((vectorArray as number[]).reduce((acc, val) => acc + Math.pow(val, 2), 0));
+        
+        // Divide each element of the vector by its norm
+        const normalizedVector = vectorArray.map(val => val as any / norm);
+
+        return normalizedVector;
+    }
+
 
     return (
         <button id="submit_button"
@@ -281,6 +301,18 @@ const SubmitGeminiButton = ({ churchFather, churchText, GeminiAPIKey }: { church
                 const textsInDatabase = await getDocs(collection(db, 'church-fathers', churchFather, "texts"));
                 const textKey = 'text_' + (textsInDatabase.size + 1).toString();
                 const response = await addTextAIDataToDatabase(churchFather, churchText, textKey, churchFatherTextStore);
+
+                const index = pc.index("church-fathers-ai");
+                const churchFather_underscore = churchFather.replace(/ /g, "_");
+                const normalizedEmbedding = normalizeVector(churchFatherTextStore.embedding.values);
+                console.log(normalizedEmbedding);
+                console.log(churchFather_underscore+"_"+textKey);
+                await index.namespace("church-fathers-texts").upsert([
+                    {
+                        "id": churchFather_underscore+"_"+textKey, 
+                        "values": normalizedEmbedding
+                    }
+                ]);
 
                 return response;     
                 }
