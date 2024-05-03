@@ -9,7 +9,7 @@ app = Flask(__name__)
 
 @app.route('/<version>', methods=['POST'])
 def test_classifier(version):
-    if not request.is_json:
+    # if not request.is_json:
     #     return "Missing JSON in request", 400
 
     # # Extract the JSON data
