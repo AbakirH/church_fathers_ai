@@ -20,7 +20,7 @@ export default function Home() {
                     <p className="text-sm text-gray-600">This page helps you explore the writings of early Christian leaders stored in the database, known as Church Fathers. It offers a way to see what these historical figures wrote and how their writings connect to the Bible.</p>
                     <p className="text-sm text-gray-600">This page gives you two different ways to see how the Bible Reference relates to the text.</p>
                     <ul>
-                        <li><p className="text-sm text-gray-600">Similarity Score: A numerical value indicating how closely the Church Father's text relates to the Bible verse, using the text embedding using Google's model text-embedding-004</p>
+                        <li><p className="text-sm text-gray-600">Similarity Score: A numerical value indicating how closely the Church Father&apos;s text relates to the Bible verse, using the text embedding using Google&apos;s model text-embedding-004</p>
                         </li>
                         <li><p className="text-sm text-gray-600">Reference Type: Whether the reference is a direct or indirect citation of the Bible verse. </p>
                         </li>
@@ -33,7 +33,7 @@ export default function Home() {
                 </h2>
                 <div className="bg-gray-100 p-4 rounded-md">
                     <p className="text-sm text-gray-600">Search through the NKJV Bible or all the writings stored on this website from the Church Fathers.</p>
-                    <p className="text-sm text-gray-600">Through the use of Google's model text-embedding-004, and semantic search techniques, allows you to search the Bible for what you are searching for through the meaning of the phrase instead of finding the exact order of the phrase</p>
+                    <p className="text-sm text-gray-600">Through the use of Google&apos;s model text-embedding-004, and semantic search techniques, allows you to search the Bible for what you are searching for through the meaning of the phrase instead of finding the exact order of the phrase</p>
                 </div>
             </div>
             <div className="mb-8">

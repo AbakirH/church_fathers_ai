@@ -187,8 +187,8 @@ const SubmitGeminiButton = ({ churchFather, churchText, GeminiAPIKey }: { church
         
     }
 
-    async function fetchAndClassifyText(classifier_versions, data) {
-    const fetchPromises = classifier_versions.map(version => {
+    async function fetchAndClassifyText(classifier_versions:any, data:any) {
+    const fetchPromises = classifier_versions.map((version:any) => {
         const url = `https://church-fathers-ai.onrender.com/${version}`;
         return fetch(url, {
             method: 'POST',
@@ -208,7 +208,8 @@ const SubmitGeminiButton = ({ churchFather, churchText, GeminiAPIKey }: { church
                 throw new Error('No success in response data');
             }
             const [book, chapter, startingVerse] = data.predicted_label.split('_');
-            const verseText = nkjv[book][chapter][startingVerse];
+            const nkjvJSON:any = nkjv;
+            const verseText = nkjvJSON[book][chapter][startingVerse];
             return {
                 version,
                 book,
@@ -226,7 +227,7 @@ const SubmitGeminiButton = ({ churchFather, churchText, GeminiAPIKey }: { church
     return Promise.all(fetchPromises);
 }
 
-    async function processAndClassifyVerses(validResults, churchFatherTextStore, verses) {
+    async function processAndClassifyVerses(validResults:any, churchFatherTextStore:any, verses:any) {
         const processedVerses = [];
 
         for (const verse of validResults) {
